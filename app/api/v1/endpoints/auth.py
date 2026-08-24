@@ -5,7 +5,7 @@ from sqlalchemy import select
 from jose import jwt, JWTError
 from app.core.config import settings
 
-from app.api.v1.deps import SessionDep, AuthFormDep, Current_User_Dep
+from app.api.v1.deps import SessionDep, AuthFormDep
 from app.core.security import create_access_token, verify_password, get_password_hashed, create_refresh_token
 
 from app.models.user import User
@@ -99,7 +99,3 @@ def refresh_access_token(body:TokenRefreshRequest, db:SessionDep)-> Any:
         "token_type": "bearer"
     }
 
-
-@router.get("/me", response_model=UserResponse)
-def read_users_me(current_user:Current_User_Dep)->Any:
-    return current_user

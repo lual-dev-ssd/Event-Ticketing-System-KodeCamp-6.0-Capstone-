@@ -1,7 +1,8 @@
 import uuid
-from typing import Any, List
+from typing import Any, List, Optional
 from sqlalchemy import select
-from fastapi import APIRouter, HTTPException, status
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, status, Query
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import SessionDep, CurrentAdminDep
@@ -98,11 +99,30 @@ def list_event_attendees(event_id: uuid.UUID, db:SessionDep, current_admin:Curre
 
 
 @router.get("/", response_model=List[EventResponse])
-def list_events(db:SessionDep, skip: int =0, limit: int =100)->Any:
-    stmt = select(Event).offset(skip).limit(limit)
-    events = db.execute(stmt).scalars().all()
+def list_events(
+    db:SessionDep,
+    category: Optional[str]=Query(None, description="Filter by event category"),
+    start_date: Optional[datetime]=Query(None, description="Filter events starting on or after this date"),
+    end_date: Optional[datetime]=Query(None, description="Filter events starting on or before this date"),
+    skip: int=0,
+    limit:int=100
+)-> Any:
+    
+    stmt = select(Event)
 
-    return events
+    if category:
+        stmt = stmt.where(Event.category.ilike(f"%{category}%"))
+
+    if start_date:
+        stmt = stmt.where(Event.start_time >= start_date)
+
+    if end_date:
+        stmt = stmt.where(Event.start_time <= end_date)
+
+    stmt = stmt.offset(skip).limit(limit)
+
+    return db.execute(stmt).scalars()
+  
 
 @router.get("/{event_id}", response_model=EventResponse)
 def get_event(event_id: uuid.UUID, db:SessionDep)->Any:

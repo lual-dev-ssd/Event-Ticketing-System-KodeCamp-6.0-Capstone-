@@ -1,5 +1,5 @@
 import uuid
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
 from datetime import datetime
 from sqlalchemy import String, Uuid, DateTime, Float, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -23,6 +23,7 @@ class Event(Base):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
 
     ticket_sold:Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    category:Mapped[Optional[str]] = mapped_column(String, index=True, nullable=True)
 
     organizer_id:Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     organizer:Mapped["User"]=relationship("User", back_populates="events")

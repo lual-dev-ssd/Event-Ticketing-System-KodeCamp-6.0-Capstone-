@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional
 import uuid
 
 
@@ -27,3 +28,8 @@ class Token(BaseModel):
 
 class TokenRefreshRequest(BaseModel):
     refresh_token:str
+
+
+class UserUpdate(BaseModel):
+    full_name:Optional[str]=None
+    email:Optional[EmailStr]=None
