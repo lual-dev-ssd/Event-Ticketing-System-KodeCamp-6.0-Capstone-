@@ -10,12 +10,19 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+psycopg2://user:password@host/database_name"
 
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "daveben.ajak@gmail.com"
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
+    EMAILS_FROM_EMAIL: str = "daveben.ajak@gmail.com"
+    EMAILS_FROM_NAME: str = "Event Ticketing System"
 
-    SECRET_KEY:str = "689794011b3717ea6923a3c2ab376f4711817c71fc5fa45228d43c009994aade"
+    SECRET_KEY:str = "Key here"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

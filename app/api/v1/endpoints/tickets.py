@@ -2,17 +2,18 @@ import uuid
 from typing import Any, List
 from sqlalchemy import select
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 
 from app.api.v1.deps import SessionDep, Current_User_Dep, CurrentAdminDep
 from app.models.event import Event
 from app.models.ticket import Ticket
 from app.schemas.ticket import TicketCreate, TicketResponse
+from app.services.ticket_delivery import send_ticket_email_task
 
 router = APIRouter()
 
 @router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
-def purchase_ticket(ticket_in:TicketCreate, db:SessionDep, current_user:Current_User_Dep)->Any:
+def purchase_ticket(ticket_in:TicketCreate, db:SessionDep, current_user:Current_User_Dep, background_tasks:BackgroundTasks)->Any:
     event = db.get(Event, ticket_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -36,9 +37,16 @@ def purchase_ticket(ticket_in:TicketCreate, db:SessionDep, current_user:Current_
     db.commit()
     db.refresh(new_ticket)
 
+    background_tasks.add_task(
+        send_ticket_email_task,
+        recipient_email=current_user.email,
+        ticket_id=str(new_ticket.id),
+        event_title=event.title
+    )
+
     return new_ticket
 
-@router.patch("/{tiicket_id}/cancel", response_model=TicketResponse)
+@router.patch("/{ticket_id}/cancel", response_model=TicketResponse)
 def cancel_ticket(ticket_id: uuid.UUID, db:SessionDep, current_user:Current_User_Dep)->Any:
     ticket = db.get(Ticket, ticket_id)
     if not ticket:
@@ -77,7 +85,7 @@ def cancel_ticket(ticket_id: uuid.UUID, db:SessionDep, current_user:Current_User
 
     return ticket
 
-@router.patch("{ticket_id}/check-in", response_model=TicketResponse)
+@router.patch("/{ticket_id}/check-in", response_model=TicketResponse)
 def check_in_ticket(ticket_id:uuid.UUID, db:SessionDep, current_dmin:CurrentAdminDep)->Any:
     ticket = db.get(Ticket, ticket_id)
     if not ticket:
@@ -120,7 +128,7 @@ def get_my_tickets(db:SessionDep, current_user:Current_User_Dep, skip:int =0, li
     tickets = db.execute(stmt).scalars().all()
     return tickets
 
-@router.get("/event/{even_id}", response_model=List[TicketResponse])
+@router.get("/event/{event_id}", response_model=List[TicketResponse])
 def get_event_tickets(event_id:uuid.UUID, db:SessionDep, current_admin:CurrentAdminDep)-> Any:
     event = db.get(Event, event_id)
     if not event:
