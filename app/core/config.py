@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    MOMO_SUBSCRIPTION_KEY:str ="sub_key"
+    MOMO_API_USER:str ="your_momo_api_user_uuid"
+    MOMO_API_KEY:str = "your_momo_api_key"
+    MOMO_ENVIRONMENT:str ="sandbox"
+    MOMO_BASE_URL:str = "https://sandbox.momodevelopment.mtn.com"
+
+    PUBLIC_URL:str = "https://abc123.ngrok-free.dev"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
