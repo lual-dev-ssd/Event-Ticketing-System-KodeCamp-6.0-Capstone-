@@ -138,7 +138,7 @@ def send_ticket_email_task(
     )
 
     msg = MIMEMultipart("related")
-    msg["Subject"] = f"🎟️ Your Ticket for {event_title}"
+    msg["Subject"] = f"Your Ticket for {event_title}"
     msg["From"] = f"{settings.EMAILS_FROM_NAME}<{settings.EMAILS_FROM_EMAIL}>"
     msg["To"] = recipient_email
 

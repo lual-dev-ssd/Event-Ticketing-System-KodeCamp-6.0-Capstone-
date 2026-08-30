@@ -8,7 +8,7 @@
 
 ### Register User
 * **Method:** `POST`
-* **Endpoint:** `/auth/reqister`
+* **Endpoint:** `api/v1/auth/reqister`
 * **Auth Required:** No
 ### Request Body
 
@@ -32,7 +32,7 @@
 
 ### Verify Email
 * **Medthod:** `GET`
-* **Endpoint:** `/auth/verify-email`
+* **Endpoint:** `api/v1/auth/verify-email`
 * **Auth Required:** No
 * **Query Parameter:** `token` (string, required)
 
@@ -47,7 +47,7 @@
 
 ### User Login (Obtain Tokens)
 * **Method:** `POST`
-* **Endpoint:** `/auth/token`
+* **Endpoint:** `api/v1/auth/token`
 * **Auth Required:** No
 * **Content-Type:** application/x-www-form-urlencoded
 
@@ -68,7 +68,7 @@
 
 ### Refresh Access Token
 * **Method:** `POST`
-* **Endpoint:** `/auth/refresh_token`
+* **Endpoint:** `api/v1/auth/refresh_token`
 * **Auth Required:** No
 
 
@@ -96,7 +96,7 @@
 
 ### Read Users Me
 * **Method:**: `GET`
-* **Endpoint:** `/users/me
+* **Endpoint:** `api/v1/users/me`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -117,7 +117,7 @@
 
 ### Update My Profile
 * **Method:**: `PATCH`
-* **Endpoint:** `/users/me
+* **Endpoint:** `api/v1/users/me`
 * **Auth Required:** Yes(Bearer)
 
 
@@ -148,7 +148,7 @@
 
 ### Create Event
 * **Method:** `POST`
-* **Endpoint:** `/events/`
+* **Endpoint:** `api/v1/events/`
 * **Auth Required:** Yes(Bearer)
 
 ### Request Body
@@ -185,7 +185,7 @@
 
 ### Update Event
 * **Method:** `PATCH`
-* **Endpoint:** `/events/{event_id}`
+* **Endpoint:** `api/v1/events/{event_id}`
 * **Auth Required:** Yes(Bearer)
 
 
@@ -209,7 +209,7 @@
 
 ### Delete Event
 * **Method:** `DELETE`
-* **Endpoint:** `/events/{event_id}`
+* **Endpoint:** `api/v1/events/{event_id}`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -224,7 +224,7 @@
 
 ### List Event Attendees
 * **Method:** `GET`
-* **Endpoint:** `/events/{event_id}/attendees`
+* **Endpoint:** `api/v1/events/{event_id}/attendees`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -254,7 +254,7 @@
 
 ### Puchase Ticket
 * **Method:** `POST`
-* **Endpoint:** `/tickets/`
+* **Endpoint:** `api/v1/tickets/`
 * **Auth Required:** Yes(Bearer)
 
 ### Request Body
@@ -281,7 +281,7 @@
 
 ### Get My Tickets
 * **Method:** `GET`
-* **Endpoint:** `/tickets/me`
+* **Endpoint:** `api/v1/tickets/me`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -302,7 +302,7 @@
 
 ### Get Events Tickets
 * **Method:** `GET`
-* **Endpoint:** `/tickets/event/{event_id}`
+* **Endpoint:** `api/v1/tickets/event/{event_id}`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -322,7 +322,7 @@
 
 ### Cancel Ticket
 * **Method:** `PATCH`
-* **Endpoint:** `/tickets/{ticket_id}/cancel`
+* **Endpoint:** `api/v1/tickets/{ticket_id}/cancel`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
@@ -335,10 +335,70 @@
   
 }
 ```
+### Initiate MoMo Payment
+Initiate a ticket purchase via MTN Mobile Money. The backend dynamically retrieves the event ticket price from PostgreSQL to prevent requestion tampering
+* **Method:** `POST`
+* **Endpoint:** `api/v1/payments/momo/initiate`
+* **Auth Required:** Yes(Bearer)
+
+### Request Body
+```json
+ {
+    "event_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "phone_number": "46733123453",
+  }
+```
+
+### Response
+* **202 Accepted**
+
+```json
+{
+  "Message": "Payment prompt sent to mobile device",
+  "ticket_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "pending_payment"
+}
+```
+### Error Response:
+* **404 NOT FOUND**: Event ID does not exist
+* **400 BAD REQUEST**: Event Is sout out or payment initiation failed
+* **403 SERVICE UNAVAILABLE**: MoMo payment gateway circuit breaker tripped
+
+
+### MoMo Webhook Callback
+Asynchronous webhook endpoint called by MYN MoMo to notify the Backend of transaction completion
+* **Method:** `POST`
+* **Endpoint:** `api/v1/payments/momo/callback`
+* **Auth Required:** `No` called by Provider
+
+### Request Body
+```json
+{
+  "externalId": "25c2de8a-bce1-4018-9da1-454d0db2865b",
+  "status": "SUCCESSFUL",
+  "financialTransactionId": "123456789",
+  "amount": "10.00",
+  "currency": "EUR",
+  "payer": {
+    "partyIdType": "MSISDN",
+    "partyId": "46733123453"
+  }
+}
+```
+
+### Response
+* **202 Accepted**
+
+```json
+{
+  "status": "SUCCESSFUL",
+  "message": "Payment confirmed and PDF ticket sent."
+}
+```
 
 ### Check In Ticket
 * **Method:** `PATCH`
-* **Endpoint:** `/tickets/{ticket_id}/check-in`
+* **Endpoint:** `api/v1/tickets/{ticket_id}/check-in`
 * **Auth Required:** Yes(Bearer)
 
 ### Response
