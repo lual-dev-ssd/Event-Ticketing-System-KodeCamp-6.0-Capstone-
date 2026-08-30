@@ -1,39 +1,30 @@
 from typing import Any
 import uuid
-<<<<<<< HEAD
+
 from fastapi import APIRouter, status, HTTPException, BackgroundTasks
-=======
 from fastapi import APIRouter, status, HTTPException
->>>>>>> origin/main
+
 from sqlalchemy import select
 from jose import jwt, JWTError
 from app.core.config import settings
 
 from app.api.v1.deps import SessionDep, AuthFormDep
-<<<<<<< HEAD
 from app.core.security import create_access_token, verify_password, get_password_hashed, create_refresh_token, create_email_verification_token, verify_email_token
 
 from app.models.user import User
 from app.schemas.user import Token, UserResponse, UserCreate, TokenRefreshRequest
 from app.utils.email import send_verification_email_task
-=======
+
 from app.core.security import create_access_token, verify_password, get_password_hashed, create_refresh_token
 
 from app.models.user import User
 from app.schemas.user import Token, UserResponse, UserCreate, TokenRefreshRequest
->>>>>>> origin/main
 
 
 router = APIRouter()
 
-
-<<<<<<< HEAD
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(user_in:UserCreate, db:SessionDep, background:BackgroundTasks)->Any:
-=======
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_in:UserCreate, db:SessionDep)->Any:
->>>>>>> origin/main
     stmt = select(User).where(User.email==user_in.email)
     existing_user = db.execute(stmt).scalar_one_or_none()
 
@@ -48,19 +39,15 @@ def register_user(user_in:UserCreate, db:SessionDep)->Any:
         name = user_in.name,
         hashed_password = get_password_hashed(user_in.password),
         is_verified=False,
-<<<<<<< HEAD
         is_admin=False,
-        is_active=True
-=======
-        is_admin=False
->>>>>>> origin/main
+        is_active=True,
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-<<<<<<< HEAD
+
     token = create_email_verification_token(new_user.email)
     verify_url = f"{settings.PUBLIC_URL}/api/v1/auth/verify-email?token={token}"
 
@@ -94,9 +81,8 @@ def verify_email(token: str, db: SessionDep) -> Any:
     db.commit()
 
     return {"message": "Email verified successfully. You can now purchase tickets."}
-=======
-    return new_user
->>>>>>> origin/main
+
+
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(form_data:AuthFormDep, db:SessionDep)-> Any:
@@ -117,15 +103,13 @@ def login_for_access_token(form_data:AuthFormDep, db:SessionDep)-> Any:
             detail="Inactive User"
         )
 
-<<<<<<< HEAD
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email address not verified. Please check your inbox to verify your account"
         )
 
-=======
->>>>>>> origin/main
+
     access_token = create_access_token(data={"sub":str(user.id), "type":"access"})
     refresh_token = create_refresh_token(data={"sub": str(user.id), "type":"refresh"})
 
@@ -136,11 +120,7 @@ def login_for_access_token(form_data:AuthFormDep, db:SessionDep)-> Any:
 def refresh_access_token(body:TokenRefreshRequest, db:SessionDep)-> Any:
     credentials_exceptions = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-<<<<<<< HEAD
         detail="could not validate credentials",
-=======
-        detail="counld not validate credentials",
->>>>>>> origin/main
         headers={"WWW-Authenticate":"Bearer"}
     )
 

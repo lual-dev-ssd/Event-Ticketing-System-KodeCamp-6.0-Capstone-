@@ -9,22 +9,21 @@ from app.models.ticket import Ticket
 from app.services.momo import MomoService
 from app.services.ticket_delivery import send_ticket_email_task
 from sqlalchemy.orm import joinedload
-from app.schemas.payment import MoMoCallbackPayload
+from app.schemas.payment import MoMoCallbackPayload, MoMoInitiateRequest
 from app.api.v1.deps import currentVerfiedUserDep
 
 router = APIRouter()
 
 @router.post("/momo/initiate", status_code=status.HTTP_202_ACCEPTED)
 def initiate_momo_ticket_purchase(
-    event_id:uuid.UUID,
-    phone_number:str,
+    request:MoMoInitiateRequest,
     db:SessionDep,
-    current_user:currentVerfiedUserDep
+    current_user: currentVerfiedUserDep
 )-> Any:
-    event = db.get(Event, event_id)
+    event = db.get(Event, request.event_id)
     if not event:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
         )
 
@@ -48,7 +47,7 @@ def initiate_momo_ticket_purchase(
 
     try:
         momo.request_to_pay(
-            phone_number=phone_number,
+            phone_number=request.phone_number,
             amount=float(event.ticket_price),
             reference_id=str(ticket.id)
         )
@@ -62,7 +61,7 @@ def initiate_momo_ticket_purchase(
         db.delete(ticket)
         db.commit()
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE if hasattr(status, "HTTP_503_SERVICE_UNAVAILABLE") else 503,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE ,
             detail="Payment gateway service temporarily unavailable. Please try again later. "
         )
 
@@ -87,11 +86,16 @@ def momo_payment_callback(
     if not ticket_id_str:
         raise HTTPException(status_code=400, detail="Missing external in callback")
 
-    ticket = db.query(Ticket).options(joinedload(Ticket.user)).filter(Ticket.id==uuid.UUID(ticket_id_str)).first()
+    try:
+        ticket_uuid = uuid.UUID(ticket_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Missing externalId i Callback payload")
+
+    ticket = db.query(Ticket).options(joinedload(Ticket.user)).filter(Ticket.id==ticket_uuid).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket record not found")
 
-    if momo_status=="SUCCESSFUL":
+    if momo_status == "SUCCESSFUL":
         ticket.status = "valid"
 
         event = db.get(Event, ticket.event_id)
@@ -113,11 +117,13 @@ def momo_payment_callback(
                 event_title=event_title
             )
 
-        return {"status": "SUCCESSFULL", "message":"Payment confirmed and PDF ticket sent."}
+        return {"status": "SUCCESSFUL", "message":"Payment confirmed and PDF ticket sent."}
 
     else:
         ticket.status="failed"
         db.add(ticket)
         db.commit()
 
-        return {"status": "FAILED", "message":"Payment processing failed."}
+        failure_reason = payload.reason or "Payment declined by providder"
+
+        return {"status": "FAILED", "message":f"Payment processing failed: {failure_reason}"}
