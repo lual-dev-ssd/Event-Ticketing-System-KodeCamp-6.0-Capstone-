@@ -6,13 +6,16 @@ from app.core.config import settings
 
 pwd_context = PasswordHash.recommended()
 
+
 VERIFY_TOKEN_EXPIRE_HOURS = 24
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hashed(password):
     return pwd_context.hash(password)
+
 
 def create_email_verification_token(email:str)->str:
     expire = datetime.now(timezone.utc) + timedelta(hours=VERIFY_TOKEN_EXPIRE_HOURS)

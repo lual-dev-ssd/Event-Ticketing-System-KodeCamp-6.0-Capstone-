@@ -20,7 +20,10 @@ class Ticket(Base):
     event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id"), nullable=False, index=True)
 
     purchase_price:Mapped[float] = mapped_column(Float, nullable=False)
+
     status:Mapped[str] = mapped_column(String, default="pending_payemnt", nullable=False)
+
+    status:Mapped[str] = mapped_column(String, default="valid", nullable=False)
 
     check_in_at:Mapped[Optional[datetime]]= mapped_column(DateTime(timezone=True), nullable=True, default=None)
 
