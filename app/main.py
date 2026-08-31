@@ -42,20 +42,4 @@ async def favicon():
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/")
-def read_root():
-    return {
-        "status": "online",
-        "message": "Event Ticketing & MoMo Payment API",
-        "docs": "/docs",
-    }
-
-orig_getaddrinfo = socket.getaddrinfo
-
-def getaddrinfo_ipv4(*args, **kwargs):
-    response = orig_getaddrinfo(*args, **kwargs)
-    return [res for res in response if res[0]==socket.AF_INET]
-
-socket.getaddrinfo = getaddrinfo_ipv4
-
 app.include_router(api_router, prefix="/api/v1")

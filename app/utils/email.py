@@ -1,4 +1,5 @@
 import io
+import traceback
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -8,7 +9,7 @@ from app.core.config import settings
 
 def _send_smtp_message(msg: MIMEMultipart)->None:
     smtp_host = str(getattr(settings, "SMTP_HOST", "smtp.gmail.com"))
-    smtp_port = int(getattr(settings, "SMTP_PORT", 465))
+    smtp_port = int(getattr(settings, "SMTP_PORT", 587))
     smtp_user = getattr(settings, "SMTP_USER", "")
     smtp_pass = getattr(settings, "SMTP_PASSWORD", "")
 
@@ -38,7 +39,8 @@ def send_verification_email_task(recipient_email:str, verify_url:str)-> None:
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Verify Your Account - Event Ticketing"
-    msg["From"] = settings.SMTP_USER
+    sender_email = getattr(settings, "EMAILS_FROM_EMAIL", settings.SMTP_USER) or settings.SMTP_USER
+    msg["From"] = f"{getattr(settings, 'EMAILS_FROM_NAME','Event Ticketing')}<{sender_email}>"
     msg["To"] = recipient_email
 
     text_content = f"Welcome to Event Ticketing!\n\nPlease verify your email address by opening this link in your browser:\n{verify_url}\n\nIf you did not create this account, please ignore this email"
@@ -75,3 +77,4 @@ def send_verification_email_task(recipient_email:str, verify_url:str)-> None:
         _send_smtp_message(msg)
     except Exception as e:
         print(f"[Email Error] Failed to send verification email to {recipient_email}:{e}")
+        traceback.print_exc()
