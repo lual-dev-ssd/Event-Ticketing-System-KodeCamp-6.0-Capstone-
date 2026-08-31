@@ -25,6 +25,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.get("/")
+async def root():
+    return {
+        "status":"online",
+        "message":f"welcome to {settings.PROJECT_NAME}",
+        "docs":settings.DOCS_URL or "/docs"
+    }
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
@@ -33,5 +40,13 @@ async def favicon():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "message": "Event Ticketing & MoMo Payment API",
+        "docs": "/docs",
+    }
 
 app.include_router(api_router, prefix="/api/v1")
