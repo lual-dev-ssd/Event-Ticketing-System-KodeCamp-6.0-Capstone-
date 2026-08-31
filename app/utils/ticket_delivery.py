@@ -1,6 +1,5 @@
 import io
 import smtplib
-import traceback
 import qrcode
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -11,7 +10,6 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from app.utils.email import _send_smtp_message
 
 from app.core.config import settings
 
@@ -140,11 +138,6 @@ def send_ticket_email_task(
     )
 
     msg = MIMEMultipart("related")
-    msg["Subject"] = f"your Ticket for {event_title}"
-
-    sender_email = getattr(settings, "EMAILS_FROM_EMAIL", settings.SMTP_USER) or settings.SMTP_USER
-    msg["From"] = f"{getattr(settings, 'EMAILS_FROM_NAME','Event Ticketing')}<{sender_email}>"
-
     msg["Subject"] = f"Your Ticket for {event_title}"
     msg["From"] = f"{settings.EMAILS_FROM_NAME}<{settings.EMAILS_FROM_EMAIL}>"
     msg["To"] = recipient_email
@@ -168,8 +161,14 @@ def send_ticket_email_task(
 
     
     try:
-        _send_smtp_message(msg)
-        print(f"[Ticket Success] sent ticket PDF to {recipient_email}")
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            if settings.SMTP_TLS:
+                server.starttls()
+
+            if settings.SMTP_USER and settings.SMTP_PASSWORD:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+
+            server.send_message(msg)
+
     except Exception as exc:
         print(f"Failed to deliver ticket email: {exc}")
-        traceback.print_exc()

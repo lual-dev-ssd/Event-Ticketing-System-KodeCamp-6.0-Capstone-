@@ -1,36 +1,10 @@
 import io
-import traceback
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
 from app.core.config import settings
-
-def _send_smtp_message(msg: MIMEMultipart)->None:
-    smtp_host = str(getattr(settings, "SMTP_HOST", "smtp.gmail.com"))
-    smtp_port = int(getattr(settings, "SMTP_PORT", 587))
-    smtp_user = getattr(settings, "SMTP_USER", "")
-    smtp_pass = getattr(settings, "SMTP_PASSWORD", "")
-
-    use_ssl = (smtp_port==465) or getattr(settings, "SMTP_SSL", False)
-
-    if use_ssl:
-        with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15) as server:
-            if smtp_user and smtp_pass:
-                server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-
-    else:
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            if getattr(settings, "SMTP_TLS", True):
-                server.starttls()
-
-            if smtp_user and smtp_pass:
-                server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-
-
 
 def send_verification_email_task(recipient_email:str, verify_url:str)-> None:
 
@@ -39,8 +13,7 @@ def send_verification_email_task(recipient_email:str, verify_url:str)-> None:
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Verify Your Account - Event Ticketing"
-    sender_email = getattr(settings, "EMAILS_FROM_EMAIL", settings.SMTP_USER) or settings.SMTP_USER
-    msg["From"] = f"{getattr(settings, 'EMAILS_FROM_NAME','Event Ticketing')}<{sender_email}>"
+    msg["From"] = settings.SMTP_USER
     msg["To"] = recipient_email
 
     text_content = f"Welcome to Event Ticketing!\n\nPlease verify your email address by opening this link in your browser:\n{verify_url}\n\nIf you did not create this account, please ignore this email"
@@ -74,7 +47,13 @@ def send_verification_email_task(recipient_email:str, verify_url:str)-> None:
     msg.attach(MIMEText(html_content, "html", "utf-8"))
 
     try:
-        _send_smtp_message(msg)
+        smtp_host = getattr(settings, "SMTP_HOST", None) or "smtp.gmail.com"
+        smtp_port = getattr(settings, "SMTP_PORT", None) or 587
+
+        with smtplib.SMTP(str(smtp_host), int(smtp_port)) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.send_message(msg)
+
     except Exception as e:
         print(f"[Email Error] Failed to send verification email to {recipient_email}:{e}")
-        traceback.print_exc()
