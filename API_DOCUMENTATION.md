@@ -341,11 +341,18 @@ Initiate a ticket purchase via MTN Mobile Money. The backend dynamically retriev
 * **Endpoint:** `api/v1/payments/momo/initiate`
 * **Auth Required:** Yes(Bearer)
 
-### Request Body
+### Request Body Success test number
 ```json
  {
     "event_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     "phone_number": "46733123453",
+  }
+```
+### Request Body Sfailure test number
+```json
+ {
+    "event_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "phone_number": "46733123454",
   }
 ```
 
