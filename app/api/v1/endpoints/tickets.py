@@ -6,9 +6,9 @@ from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 
 from app.api.v1.deps import SessionDep, Current_User_Dep, CurrentAdminDep
 from app.models.event import Event
-from app.models.ticket import Ticket
+from app.models.ticket import Ticket, TicketStatus
 from app.schemas.ticket import TicketCreate, TicketResponse
-from app.services.ticket_delivery import send_ticket_email_task
+from app.utils.ticket_delivery import send_ticket_email_task
 
 router = APIRouter()
 
@@ -61,7 +61,7 @@ def cancel_ticket(ticket_id: uuid.UUID, db:SessionDep, current_user:Current_User
             detail="You do not have permission to cancel this ticket"
         )
 
-    if ticket.status=="cancelled":
+    if ticket.status==TicketStatus.CANCELLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ticket is already cancelled"
@@ -74,7 +74,7 @@ def cancel_ticket(ticket_id: uuid.UUID, db:SessionDep, current_user:Current_User
             detail="Associated event not found"
         )
 
-    ticket.status = "cancelled"
+    ticket.status = TicketStatus.CANCELLED
     if event.ticket_sold>0:
         event.ticket_sold-=1
 
@@ -94,14 +94,14 @@ def check_in_ticket(ticket_id:uuid.UUID, db:SessionDep, current_dmin:CurrentAdmi
             detail="Invalid ticket ID"
         )
 
-    if ticket.status in  ["cancelled", "refunded"]:
+    if ticket.status in  [TicketStatus.CANCELLED, TicketStatus.FAILED, TicketStatus.PENDING]:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Cannot check in. Ticket status is '{ticket.status}'."
         )
 
     
-    if ticket.status == "used":
+    if ticket.status == TicketStatus.USED:
         checked_in_time = (
             ticket.check_in_at.strftime("%Y-%m-%d %H:%M:%S")
             if ticket.check_in_at else "earlier"
@@ -112,7 +112,7 @@ def check_in_ticket(ticket_id:uuid.UUID, db:SessionDep, current_dmin:CurrentAdmi
             detail=f"Ticket has already been used (Checked in at {checked_in_time})"
         )
 
-    ticket.status = "used"
+    ticket.status = TicketStatus.USED
     ticket.check_in_at = datetime.now(timezone.utc)
 
     db.add(ticket)

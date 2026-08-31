@@ -14,8 +14,8 @@ class MomoService:
         self.base_url = settings.MOMO_BASE_URL
         self.public_url = settings.PUBLIC_URL
 
-
-    def _get_access_token(self)->str:
+    
+    async def _get_access_token(self)->str:
         credentials = f"{self.api_user}:{self.api_key}"
         encoded_creds = base64.b64encode(credentials.encode()).decode()
 
@@ -26,21 +26,21 @@ class MomoService:
             "Ocp-Apim-Subscription-Key":self.subscription_key,
         }
 
-        with httpx.Client(timeout=5.0) as client:
-            res = client.post(url, headers=headers)
+        async with httpx.AsyncClient(timeout=10) as client:
+            res = await client.post(url, headers=headers)
             if res.status_code != 200:
                 raise Exception(f"MoMo Auth Error ({res.status_code}):{res.text}")
             return res.json().get("access_token")
 
 
     @momo_breaker
-    def request_to_pay(
+    async def request_to_pay(
         self,
         phone_number:str,
         amount:float,
         reference_id:str
     )-> dict:
-        token = self._get_access_token()
+        token = await self._get_access_token()
         url = f"{self.base_url}/collection/v1_0/requesttopay"
         headers = {
             "Authorization": f"Bearer {token}",
@@ -60,8 +60,8 @@ class MomoService:
             "payeeNote": "Event Ticketing"
         }
 
-        with httpx.Client(timeout=5.0) as client:
-            res = client.post(url, json=payload, headers=headers)
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.post(url, json=payload, headers=headers)
             if res.status_code not in (200, 202):
                 raise Exception(f"MoMo RequestToPay failed ({res.status_code}):{res.text}")
             return {"status":"PENDING", "reference_id":reference_id}

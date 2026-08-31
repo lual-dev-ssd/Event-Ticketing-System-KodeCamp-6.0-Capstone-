@@ -10,6 +10,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from app.utils.email import _send_smtp_message
 
 from app.core.config import settings
 
@@ -161,14 +162,7 @@ def send_ticket_email_task(
 
     
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            if settings.SMTP_TLS:
-                server.starttls()
-
-            if settings.SMTP_USER and settings.SMTP_PASSWORD:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-
-            server.send_message(msg)
+        _send_smtp_message(msg)
 
     except Exception as exc:
         print(f"Failed to deliver ticket email: {exc}")
