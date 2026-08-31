@@ -4,6 +4,7 @@ from app.core.database import engine
 from app.api.v1.api import api_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Response
+import socket
 
 
 from app.models import Base
@@ -48,5 +49,13 @@ def read_root():
         "message": "Event Ticketing & MoMo Payment API",
         "docs": "/docs",
     }
+
+orig_getaddrinfo = socket.getaddrinfo
+
+def getaddrinfo_ipv4(*args, **kwargs):
+    response = orig_getaddrinfo(*args, **kwargs)
+    return [res for res in response if res[0]==socket.AF_INET]
+
+socket.getaddrinfo = getaddrinfo_ipv4
 
 app.include_router(api_router, prefix="/api/v1")
